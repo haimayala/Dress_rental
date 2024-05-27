@@ -1,0 +1,6 @@
+select * from CUSTOMER
+select * from EMPLOYEE
+select * from ORDERS
+select * from PAYMENT
+select * from LAUNDRY
+select * from DRESS
