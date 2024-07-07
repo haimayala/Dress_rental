@@ -1,0 +1,42 @@
+PL/SQL Developer Test script 3.0
+38
+DECLARE
+    v_eid Employee.EId%TYPE;
+    v_ename Employee.EName%TYPE;
+    v_rating Employee.PerformanceRating%TYPE;
+    top_employees SYS_REFCURSOR;
+BEGIN
+    -- Get the top 5 employees
+    top_employees := get_top_5_employees;
+
+    LOOP
+        FETCH top_employees INTO v_eid, v_ename, v_rating;
+        EXIT WHEN top_employees%NOTFOUND;
+
+        DBMS_OUTPUT.PUT_LINE('Employee Performance Review');
+        DBMS_OUTPUT.PUT_LINE('Employee ID: ' || v_eid);
+        DBMS_OUTPUT.PUT_LINE('Employee Name: ' || v_ename);
+        DBMS_OUTPUT.PUT_LINE('Current Rating: ' || v_rating);
+
+        -- Update employee performance
+        update_employee_performance(v_eid);
+
+        -- Get updated rating
+        SELECT PerformanceRating INTO v_rating
+        FROM Employee
+        WHERE EId = v_eid;
+
+        DBMS_OUTPUT.PUT_LINE('Updated Rating: ' || v_rating);
+    END LOOP;
+
+    CLOSE top_employees;
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        DBMS_OUTPUT.PUT_LINE('No data found.');
+    WHEN TOO_MANY_ROWS THEN
+        DBMS_OUTPUT.PUT_LINE('Too many rows returned.');
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('Error in main program: ' || SQLERRM);
+END;
+0
+0

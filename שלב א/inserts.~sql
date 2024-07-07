@@ -92,8 +92,6 @@ values (294, to_date('11-09-2022', 'dd-mm-yyyy'), to_date('21-05-2024', 'dd-mm-y
 insert into TAMAR.ORDERS (OID, ORDERDATE, RETURNDATE, EID, DID, CID)
 values (366, to_date('22-05-2022', 'dd-mm-yyyy'), to_date('22-12-2022', 'dd-mm-yyyy'), 109, 320, 299);
 
-insert into TAMAR.ORDERS (OID, ORDERDATE, RETURNDATE, EID, DID, CID,SALARY)
-values (31, to_date('22-05-2022', 'dd-mm-yyyy'), to_date('22-12-2022', 'dd-mm-yyyy'), 109, 320, 299, 150);
 
 
 
@@ -134,7 +132,7 @@ values (312, 163, 'Network Hardwar', to_date('27-07-2023', 'dd-mm-yyyy'), 687);
 
 --insert Table Payments
 insert into TAMAR.PAYMENT (PID, PRICE, ISPAID, FINEPRICE, OID)
-values (102, 559, 0, 0, 31);
+values (182, 559, 0, 179, 762);
 
 insert into TAMAR.PAYMENT (PID, PRICE, ISPAID, FINEPRICE, OID)
 values (558, 114, 0, 135, 139);

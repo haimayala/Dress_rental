@@ -1,0 +1,29 @@
+CREATE OR REPLACE FUNCTION get_top_5_employees RETURN SYS_REFCURSOR IS
+    result_cursor SYS_REFCURSOR;
+BEGIN
+    OPEN result_cursor FOR
+        SELECT EId, EName, PerformanceRating
+        FROM (
+            SELECT e.EId, e.EName, COUNT(o.OId) AS OrderCount, AVG(p.Price) AS AvgOrderSum, e.performancerating
+            FROM Employee e
+            JOIN Orders o ON e.EId = o.EId
+            JOIN Payment p ON o.OId = p.OId
+            GROUP BY e.EId, e.EName,e.performancerating
+            ORDER BY OrderCount DESC, AvgOrderSum DESC
+        )
+        WHERE ROWNUM <= 5;
+
+    RETURN result_cursor;
+
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        DBMS_OUTPUT.PUT_LINE('No data found.');
+        RETURN NULL;
+    WHEN TOO_MANY_ROWS THEN
+        DBMS_OUTPUT.PUT_LINE('Too many rows returned.');
+        RETURN NULL;
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('An error occurred: ' || SQLERRM);
+        RETURN NULL;
+END;
+/
