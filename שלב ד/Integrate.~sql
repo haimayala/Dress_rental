@@ -51,6 +51,12 @@ REFERENCES CUSTOMER1 (cid);
 ---מחיקת העמודה של המפתח הזר הקודם
 ALTER TABLE EVENT DROP COLUMN customer_id;
 
+---מחיקת הטבלה שהתקבלה
+drop table customer;
+
+---החזרת השם המקורי
+rename CUSTOMER1 to CUSTOMER;
+
 
 ----שינוי טבלת התשלומים שלנו
 ---הוספת עמודה חדשה להזמנות
@@ -103,32 +109,80 @@ ALTER TABLE payment MODIFY ispaid number(3) NULL;
 ALTER TABLE payment MODIFY fineprice number(3) NULL;
 
 --- הוספת עמודה שתהיה המפתח הזר החדש
-ALTER TABLE EVENT ADD pid NUMBER(3);
+ALTER TABLE EVENT ADD pid NUMBER(3) NOT NULL;
 
----הוספת כל הרשומות של הטבלה שהתקבלה לטבלה שלנו
 DECLARE
   v_pid NUMBER;
   v_price NUMBER;
 BEGIN
+  -- Disable the trigger
+  EXECUTE IMMEDIATE 'ALTER TRIGGER set_payment_price DISABLE';
+
   FOR rec IN (SELECT payment_id, ptype FROM payment_type) LOOP
     -- Generate a unique pid
     v_pid := GENERATE_UNIQUE_PID;
     
-    select total_price_ into v_price
-    from EVENT
+    -- Retrieve the maximum total_price_ for the current payment_id
+    SELECT MAX(total_price_) INTO v_price
+    FROM EVENT
     WHERE payment_id = rec.payment_id;
     
-    if v_price > 999 then
+    -- Cap the price if it exceeds 999
+    IF v_price > 999 THEN
       v_price := 999;
-      END if;
-    
+    END IF;
+
     -- Insert into PAYMENT
     INSERT INTO PAYMENT (pid, price, ispaid, fineprice, ptype)
     VALUES (v_pid, v_price, NULL, NULL, rec.ptype); -- Adjust the values as needed
-    
+
     -- Update the EVENT table with the new pid
     UPDATE EVENT
     SET pid = v_pid
     WHERE payment_id = rec.payment_id;
   END LOOP;
+
+  -- Re-enable the trigger
+  EXECUTE IMMEDIATE 'ALTER TRIGGER set_payment_price ENABLE';
+
+  -- Commit the transaction if required
+  COMMIT;
+  
+EXCEPTION
+  WHEN OTHERS THEN
+    -- Ensure the trigger is re-enabled if an error occurs
+    EXECUTE IMMEDIATE 'ALTER TRIGGER set_payment_price ENABLE';
+    -- Optionally, rollback the transaction if needed
+    ROLLBACK;
+    -- Re-raise the exception
+    RAISE;
 END;
+
+---מחיקת המפתח הזר מטבלת האירועים
+DECLARE
+  v_constraint_name VARCHAR2(255);
+BEGIN
+   SELECT uc.constraint_name INTO v_constraint_name
+  FROM user_constraints uc
+  JOIN user_cons_columns ucc
+  ON uc.constraint_name = ucc.constraint_name
+  WHERE uc.table_name = 'EVENT'
+  AND uc.constraint_type = 'R'
+  AND ucc.column_name = 'PAYMENT_ID';
+
+  EXECUTE IMMEDIATE 'ALTER TABLE EVENT DROP CONSTRAINT ' || v_constraint_name;
+END;
+
+---הוספת מפתח זר חדש שאנחנו יצרנו
+ALTER TABLE EVENT
+ADD CONSTRAINT event_pid_fk FOREIGN KEY (pid)
+REFERENCES PAYMENT (pid);
+
+---מחיקת העמודה של המפתח הזר הקודם
+ALTER TABLE EVENT DROP COLUMN payment_id;
+
+---מחיקת הטבלה שהתקבלה
+drop table payment_type;
+
+---מחיקת הטבלה של המחיר מטבלת האירועים
+ALTER TABLE EVENT DROP COLUMN total_price_;

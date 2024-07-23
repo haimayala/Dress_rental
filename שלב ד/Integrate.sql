@@ -64,15 +64,13 @@ rename CUSTOMER1 to CUSTOMER;
 ALTER TABLE ORDERS ADD pid NUMBER(3);
 ---עדכון העמודה החדשה בהתאם 
 DECLARE
-  v_cid NUMBER;
 BEGIN
   FOR rec IN (SELECT pid, oid FROM PAYMENT) LOOP
-    
-    
     UPDATE ORDERS O
-    SET O.PID = pid
-    WHERE O.OID = oid;
+    SET O.PID = rec.pid
+    WHERE O.OID = rec.oid;
   END LOOP;
+  COMMIT;
 END;
 
 ---מחיקת המפתח הזר מטבלת התשלומים
@@ -109,14 +107,15 @@ ALTER TABLE payment MODIFY ispaid number(3) NULL;
 ALTER TABLE payment MODIFY fineprice number(3) NULL;
 
 --- הוספת עמודה שתהיה המפתח הזר החדש
-ALTER TABLE EVENT ADD pid NUMBER(3);
+ALTER TABLE EVENT ADD pid NUMBER(3) NULL;
 
+--הוספת הרשומות מהטבלה החדשה לטבלה שלנו
 DECLARE
   v_pid NUMBER;
   v_price NUMBER;
 BEGIN
   -- Disable the trigger
-  EXECUTE IMMEDIATE 'ALTER TRIGGER set_payment_price DISABLE';
+  --EXECUTE IMMEDIATE 'ALTER TRIGGER set_payment_price DISABLE';
 
   FOR rec IN (SELECT payment_id, ptype FROM payment_type) LOOP
     -- Generate a unique pid
@@ -143,7 +142,7 @@ BEGIN
   END LOOP;
 
   -- Re-enable the trigger
-  EXECUTE IMMEDIATE 'ALTER TRIGGER set_payment_price ENABLE';
+  --EXECUTE IMMEDIATE 'ALTER TRIGGER set_payment_price ENABLE';
 
   -- Commit the transaction if required
   COMMIT;
